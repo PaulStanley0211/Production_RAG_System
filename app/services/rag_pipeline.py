@@ -1,12 +1,14 @@
-"""RAG pipeline orchestrator — runtime query flow with CRAG self-correction.
+"""RAG pipeline orchestrator — runtime query flow with CRAG self-correction
+and three security guard layers.
 
-Phase 5 inserts CRAG between routing and generation:
+Pipeline stages:
+    Query → input guard → memory rewrite → cache lookup → route →
+            (if RAG) → CRAG.run() → content filter → generate →
+            output guard → cache + memory → respond
 
-    Query → memory rewrite → cache lookup → route →
-            (if RAG path) → CRAG.run() → generate → cache + memory → respond
-
-CRAG.run() internally handles retrieve, grade, decide, decompose, fallback.
-The pipeline only sees the final outcome.
+Phase 4 added cache + memory + routing + grading.
+Phase 5 added the CRAG self-correction loop.
+Phase 6 added the three security guards (input / content / output).
 """
 
 import logging
@@ -21,6 +23,9 @@ from app.agents.crag import CRAGAgent
 from app.config import settings
 from app.models import Citation, QueryResponse
 from app.prompts import PromptName, registry
+from app.security.content_filter import ContentFilter
+from app.security.input_guard import InputGuard
+from app.security.output_guard import OutputGuard
 from app.services.conversation import ConversationMemory
 from app.services.document_grader import DocumentGrader, GradedChunk
 from app.services.query_decomposer import QueryDecomposer
@@ -43,10 +48,11 @@ class PipelineDiagnostics:
     sub_queries: list[str]
     retrieved_count: int
     relevant_count: int
+    guard_flags: list[str]
 
 
 class RAGPipeline:
-    """The runtime query orchestrator with CRAG self-correction."""
+    """The runtime query orchestrator with CRAG + three-layer security."""
 
     def __init__(
         self,
@@ -57,6 +63,9 @@ class RAGPipeline:
         router: QueryRouter,
         decomposer: QueryDecomposer,
         grader: DocumentGrader,
+        input_guard: InputGuard,
+        content_filter: ContentFilter,
+        output_guard: OutputGuard,
     ):
         self.anthropic = anthropic_client
         self.crag = crag_agent
@@ -65,6 +74,9 @@ class RAGPipeline:
         self.router = router
         self.decomposer = decomposer
         self.grader = grader
+        self.input_guard = input_guard
+        self.content_filter = content_filter
+        self.output_guard = output_guard
 
     async def run(
         self,
@@ -73,6 +85,21 @@ class RAGPipeline:
     ) -> QueryResponse:
         """Run the full pipeline for one query. Returns answer + citations."""
         conversation_id = conversation_id or str(uuid.uuid4())
+
+        # ---- Step 0: input guard — block injection attempts ----
+        guard_check = await self.input_guard.check(query)
+        if not guard_check.passed:
+            log.warning(
+                "Pipeline aborted by input guard: reason=%r flags=%s",
+                guard_check.reason,
+                guard_check.flags,
+            )
+            return QueryResponse(
+                answer="I can't process that request.",
+                citations=[],
+                conversation_id=conversation_id,
+                cache_hit=False,
+            )
 
         # ---- Step 1: rewrite query using conversation history ----
         rewritten = await self.memory.rewrite_query(query, conversation_id)
@@ -102,11 +129,15 @@ class RAGPipeline:
                 sub_queries=[],
                 retrieved_count=0,
                 relevant_count=0,
+                guard_flags=guard_check.flags,
             )
 
         else:
             # factual or comparative → run the CRAG self-correction loop
             crag_result = await self.crag.run(rewritten)
+
+            # Apply content filter to retrieved chunks before generation
+            self._apply_content_filter(crag_result.graded_chunks)
 
             relevant = DocumentGrader.filter_relevant(crag_result.graded_chunks)
             action = crag_result.final_decision.action
@@ -127,6 +158,16 @@ class RAGPipeline:
                 sub_queries=crag_result.sub_queries_used,
                 retrieved_count=len(crag_result.graded_chunks),
                 relevant_count=len(relevant),
+                guard_flags=guard_check.flags,
+            )
+
+        # ---- Step 4.5: output guard — redact PII before responding ----
+        output_result = await self.output_guard.check(answer)
+        answer = output_result.sanitized_text
+        if output_result.redactions:
+            log.info(
+                "OutputGuard applied: %s",
+                output_result.counts,
             )
 
         # ---- Step 5: persist to cache + memory ----
@@ -141,12 +182,13 @@ class RAGPipeline:
             log.warning("Cache/memory store failed (non-fatal): %s", e)
 
         log.info(
-            "Pipeline done: intent=%s crag_iter=%d tools=%s retrieved=%d relevant=%d",
+            "Pipeline done: intent=%s crag_iter=%d tools=%s retrieved=%d relevant=%d guard_flags=%s",
             diagnostics.intent,
             diagnostics.crag_iterations,
             diagnostics.crag_tools_used,
             diagnostics.retrieved_count,
             diagnostics.relevant_count,
+            diagnostics.guard_flags,
         )
 
         return QueryResponse(
@@ -157,6 +199,17 @@ class RAGPipeline:
         )
 
     # ---------- Internal pipeline branches ----------
+
+    def _apply_content_filter(self, graded_chunks: list[GradedChunk]) -> None:
+        """Filter retrieved chunks for instruction-like content. Mutates in place."""
+        for graded in graded_chunks:
+            original = graded.point.payload.get("content", "")
+            if not original:
+                continue
+            filtered = self.content_filter.filter_chunk_text(original)
+            if filtered.redactions:
+                graded.point.payload["content"] = filtered.sanitized_content
+                graded.point.payload["_filter_flags"] = filtered.redactions
 
     async def _generate_with_context(
         self,

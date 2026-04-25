@@ -1,8 +1,8 @@
 """FastAPI application entrypoint.
 
-Lifespan constructs all infrastructure (clients, retrieval, services, agents)
-and wires them into the RAG pipeline. Routes receive components via
-request.app.state.<name>.
+Lifespan constructs all infrastructure (clients, retrieval, services, agents,
+security guards) and wires them into the RAG pipeline. Routes receive
+components via request.app.state.<name>.
 """
 
 import logging
@@ -22,6 +22,9 @@ from app.config import settings
 from app.retrieval.hybrid_retrieval import HybridRetriever
 from app.retrieval.reranker import Reranker
 from app.routes import health, query, search
+from app.security.content_filter import ContentFilter
+from app.security.input_guard import InputGuard
+from app.security.output_guard import OutputGuard
 from app.services.conversation import ConversationMemory
 from app.services.document_grader import DocumentGrader
 from app.services.query_decomposer import QueryDecomposer
@@ -90,6 +93,12 @@ async def lifespan(app: FastAPI):
         settings.crag_max_iterations,
     )
 
+    # ---- Phase 6 security guards ----
+    app.state.input_guard = InputGuard()
+    app.state.content_filter = ContentFilter()
+    app.state.output_guard = OutputGuard()
+    log.info("Security guards ready (input, content, output)")
+
     # ---- The RAG pipeline orchestrator ----
     app.state.rag_pipeline = RAGPipeline(
         anthropic_client=app.state.anthropic,
@@ -99,6 +108,9 @@ async def lifespan(app: FastAPI):
         router=app.state.router,
         decomposer=app.state.decomposer,
         grader=app.state.grader,
+        input_guard=app.state.input_guard,
+        content_filter=app.state.content_filter,
+        output_guard=app.state.output_guard,
     )
     log.info("RAG pipeline ready")
 
