@@ -12,7 +12,7 @@ Usage:
 
 from enum import Enum
 
-from prompts import grading, templates
+from app.prompts import grading, templates
 
 
 class PromptName(str, Enum):

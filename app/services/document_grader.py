@@ -24,7 +24,7 @@ from enum import Enum
 from anthropic import AsyncAnthropic
 
 from app.config import settings
-from prompts import PromptName, registry
+from app.prompts import PromptName, registry
 from app.retrieval.reranker import RerankedResult
 
 log = logging.getLogger(__name__)

@@ -14,7 +14,7 @@ import re
 from anthropic import AsyncAnthropic
 
 from app.config import settings
-from prompts import PromptName, registry
+from app.prompts import PromptName, registry
 
 log = logging.getLogger(__name__)
 
