@@ -1,0 +1,64 @@
+[project]
+name = "production-rag-system"
+version = "0.1.0"
+description = "Production-grade RAG with CRAG self-correction, hybrid retrieval, and 3-layer security"
+requires-python = ">=3.11"
+
+dependencies = [
+    # --- Web framework ---
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "sse-starlette>=2.1.3",
+
+    # --- Config & validation ---
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+
+    # --- LLM ---
+    "anthropic>=0.39.0",
+
+    # --- Vector store & cache ---
+    "qdrant-client>=1.12.0",
+    "redis>=5.2.0",
+
+    # --- HTTP & logging ---
+    "httpx>=0.27.0",
+    "structlog>=24.4.0",
+]
+
+[project.optional-dependencies]
+# Phase 2+ — install when you reach that phase
+pipeline = [
+    "pypdf>=5.1.0",
+    "beautifulsoup4>=4.12.0",
+    "python-docx>=1.1.0",
+    "pytesseract>=0.3.13",
+    "Pillow>=11.0.0",
+    "fastembed>=0.4.0",
+    "rank-bm25>=0.2.2",
+    "chardet>=5.2.0",
+    "tiktoken>=0.8.0",
+]
+
+# Phase 8 — observability
+observability = [
+    "opik>=1.0.0",
+]
+
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
