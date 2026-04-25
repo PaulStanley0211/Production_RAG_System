@@ -1,8 +1,9 @@
 """FastAPI application entrypoint.
 
-Expensive clients (Qdrant, Redis, Anthropic) are created once during the
-`lifespan` context and attached to `app.state`. Routes receive them via
-`request.app.state.<client>` — no re-instantiation per request.
+Expensive clients (Qdrant, Redis, Anthropic) AND retrieval components
+(embedder, retriever, reranker) are created once during the `lifespan`
+context and attached to `app.state`. Routes receive them via
+`request.app.state.<name>` — no re-instantiation per request.
 
 This is THE wiring file for the entire app. Every other file ultimately
 flows through here.
@@ -18,7 +19,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from qdrant_client import AsyncQdrantClient
 
 from app.config import settings
+from app.retrieval.hybrid_retrieval import HybridRetriever
+from app.retrieval.reranker import Reranker
 from app.routes import health, query, search
+from pipeline.embedder import Embedder
 
 # Configure logging once, globally
 logging.basicConfig(
@@ -30,7 +34,7 @@ log = logging.getLogger("app")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Instantiate external clients at startup; clean up at shutdown.
+    """Instantiate external clients + retrieval at startup; clean up at shutdown.
 
     Everything before `yield` runs at startup.
     Everything after `yield` runs at shutdown.
@@ -44,10 +48,17 @@ async def lifespan(app: FastAPI):
 
     log.info("Clients initialized (Qdrant, Redis, Anthropic)")
 
-    # Phase 2+ services will be initialized here:
-    #   app.state.embedder = Embedder()
-    #   app.state.retriever = HybridRetriever(...)
-    #   app.state.reranker = Reranker()
+    # Retrieval components — load embedding + reranker models once
+    log.info("Loading retrieval models (this may take a moment on first run)...")
+    app.state.embedder = Embedder()
+    app.state.retriever = HybridRetriever(
+        qdrant=app.state.qdrant,
+        embedder=app.state.embedder,
+    )
+    app.state.reranker = Reranker()
+    log.info("Retrieval components ready")
+
+    # Phase 4+ services will be initialized here:
     #   app.state.rag_pipeline = RAGPipeline(...)
 
     yield
@@ -90,4 +101,5 @@ async def root():
         "docs": "/docs",
         "health": "/health",
         "ready": "/ready",
+        "search": "/api/search?q=...",
     }
