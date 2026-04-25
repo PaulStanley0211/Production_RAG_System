@@ -58,6 +58,12 @@ class Settings(BaseSettings):
     rrf_k: int = 60
 
     # ------------------------------------------------------------
+    # CRAG / agentic loop (Phase 5)
+    # ------------------------------------------------------------
+    crag_max_iterations: int = 3
+    enable_web_fallback: bool = False  # opt-in; web search costs extra LLM calls
+
+    # ------------------------------------------------------------
     # Security (Phase 6)
     # ------------------------------------------------------------
     guard_deny_on_injection: bool = True

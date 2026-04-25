@@ -1,8 +1,8 @@
 """FastAPI application entrypoint.
 
-Lifespan constructs all clients, retrieval components, and Phase 4 services,
-wires them into the RAG pipeline, and attaches everything to app.state.
-Routes receive what they need via request.app.state.<name>.
+Lifespan constructs all infrastructure (clients, retrieval, services, agents)
+and wires them into the RAG pipeline. Routes receive components via
+request.app.state.<name>.
 """
 
 import logging
@@ -14,6 +14,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from qdrant_client import AsyncQdrantClient
 
+from app.agents.adaptive_router import AdaptiveRouter
+from app.agents.crag import CRAGAgent
+from app.agents.tools.vector_search import VectorSearchTool
+from app.agents.tools.web_search import WebSearchTool
 from app.config import settings
 from app.retrieval.hybrid_retrieval import HybridRetriever
 from app.retrieval.reranker import Reranker
@@ -35,7 +39,6 @@ log = logging.getLogger("app")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Construct all infrastructure at startup; clean up at shutdown."""
     log.info("Starting up. env=%s", settings.app_env)
 
     # ---- External clients ----
@@ -44,7 +47,7 @@ async def lifespan(app: FastAPI):
     app.state.anthropic = AsyncAnthropic(api_key=settings.anthropic_api_key)
     log.info("Clients initialized (Qdrant, Redis, Anthropic)")
 
-    # ---- Retrieval components (load embedder + reranker models) ----
+    # ---- Retrieval components ----
     log.info("Loading retrieval models...")
     app.state.embedder = Embedder()
     app.state.retriever = HybridRetriever(
@@ -67,11 +70,30 @@ async def lifespan(app: FastAPI):
     app.state.decomposer = QueryDecomposer(anthropic_client=app.state.anthropic)
     app.state.grader = DocumentGrader(anthropic_client=app.state.anthropic)
 
+    # ---- Phase 5 tools + CRAG agent ----
+    app.state.vector_tool = VectorSearchTool(
+        retriever=app.state.retriever,
+        reranker=app.state.reranker,
+    )
+    app.state.web_tool = WebSearchTool(anthropic_client=app.state.anthropic)
+    app.state.adaptive_router = AdaptiveRouter()
+    app.state.crag_agent = CRAGAgent(
+        vector_tool=app.state.vector_tool,
+        web_tool=app.state.web_tool,
+        decomposer=app.state.decomposer,
+        grader=app.state.grader,
+        adaptive_router=app.state.adaptive_router,
+    )
+    log.info(
+        "CRAG agent ready (web_fallback=%s, max_iterations=%d)",
+        settings.enable_web_fallback,
+        settings.crag_max_iterations,
+    )
+
     # ---- The RAG pipeline orchestrator ----
     app.state.rag_pipeline = RAGPipeline(
         anthropic_client=app.state.anthropic,
-        retriever=app.state.retriever,
-        reranker=app.state.reranker,
+        crag_agent=app.state.crag_agent,
         memory=app.state.memory,
         cache=app.state.cache,
         router=app.state.router,
@@ -82,7 +104,6 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # ---- Teardown ----
     log.info("Shutting down")
     await app.state.qdrant.close()
     await app.state.redis.aclose()
@@ -110,7 +131,6 @@ app.include_router(search.router, tags=["search"])
 
 @app.get("/")
 async def root():
-    """Friendly landing page with links to common endpoints."""
     return {
         "name": "production-rag-system",
         "version": "0.1.0",
