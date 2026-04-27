@@ -1,53 +1,42 @@
-"""Centralized application settings.
+"""Application configuration via pydantic-settings.
 
-Single source of truth for all configuration. Every module reads
-`from app.config import settings`. Pydantic validates at startup —
-misconfiguration fails loudly rather than silently.
+All settings load from environment variables (with .env file support).
+Defaults match production behavior — ablation flags default to off.
 """
 
-from functools import lru_cache
-from typing import Literal
-
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """All app config in one place. Settings are loaded once at startup."""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=False,
         extra="ignore",
     )
 
     # ------------------------------------------------------------
-    # Application
+    # App
     # ------------------------------------------------------------
-    app_env: Literal["development", "production"] = "development"
+    app_env: str = "development"
     log_level: str = "INFO"
-    cors_origins: str = "http://localhost:3000,http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
     # ------------------------------------------------------------
-    # Anthropic — tiered model selection
-    # ------------------------------------------------------------
-    anthropic_api_key: str = Field(..., description="Claude API key")
-    model_generation: str = "claude-sonnet-4-6"          # Workhorse — answers
-    model_routing: str = "claude-haiku-4-5-20251001"     # Cheap+fast — routing/grading
-    model_complex: str = "claude-opus-4-7"               # Reserved — hardest queries
-
-    # ------------------------------------------------------------
-    # Qdrant (vector DB)
+    # External services
     # ------------------------------------------------------------
     qdrant_url: str = "http://qdrant:6333"
     qdrant_collection: str = "docs"
-    qdrant_vector_size: int = 384
+    redis_url: str = "redis://redis:6379/0"
+    anthropic_api_key: str = ""
 
     # ------------------------------------------------------------
-    # Redis (semantic cache + conversation memory)
+    # LLM models — tiered for cost/quality
     # ------------------------------------------------------------
-    redis_url: str = "redis://redis:6379/0"
-    semantic_cache_ttl_seconds: int = 3600
-    semantic_cache_threshold: float = 0.92
+    model_generation: str = "claude-sonnet-4-6"
+    model_routing: str = "claude-haiku-4-5-20251001"
+    model_complex: str = "claude-opus-4-7"
 
     # ------------------------------------------------------------
     # Retrieval (Phase 3)
@@ -56,35 +45,58 @@ class Settings(BaseSettings):
     retrieval_top_k_sparse: int = 20
     retrieval_top_k_reranked: int = 5
     rrf_k: int = 60
+    embedding_model_dense: str = "BAAI/bge-small-en-v1.5"
+    embedding_model_sparse: str = "Qdrant/bm25"
+    reranker_model: str = "Xenova/ms-marco-MiniLM-L-6-v2"
 
     # ------------------------------------------------------------
-    # CRAG / agentic loop (Phase 5)
+    # Caching (Phase 4)
     # ------------------------------------------------------------
-    crag_max_iterations: int = 3
-    enable_web_fallback: bool = False  # opt-in; web search costs extra LLM calls
+    semantic_cache_threshold: float = 0.92
+    semantic_cache_ttl_seconds: int = 3600
 
     # ------------------------------------------------------------
-    # Security (Phase 6)
+    # Security guards (Phase 6)
     # ------------------------------------------------------------
     guard_deny_on_injection: bool = True
     guard_pii_redaction: bool = True
 
     # ------------------------------------------------------------
-    # Observability (Phase 8)
+    # CRAG / Agentic (Phase 5)
     # ------------------------------------------------------------
-    opik_api_key: str | None = None
-    opik_project: str = "production-rag"
+    enable_web_fallback: bool = False
+    crag_max_iterations: int = 3
 
+    # ------------------------------------------------------------
+    # Ablation flags (Phase 8 — eval only)
+    # ------------------------------------------------------------
+    # All default False / "hybrid" so production behavior is unchanged.
+    # The ablation runner sets these via env vars when comparing variants.
+
+    # Skip cross-encoder reranking; use raw RRF order from hybrid retrieval
+    disable_reranker: bool = False
+
+    # Skip the CRAG self-correction loop. The pipeline does one retrieval
+    # pass + grading + generation, with no decompose retry or fallback.
+    disable_crag: bool = False
+
+    # Skip the content filter on retrieved chunks (Phase 6 security guard).
+    disable_content_filter: bool = False
+
+    # Retrieval mode: which signals to use.
+    #   "hybrid"      → dense + sparse + RRF (default)
+    #   "dense_only"  → just dense embeddings
+    #   "sparse_only" → just BM25
+    retrieval_mode: str = "hybrid"
+
+    # ------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------
     @property
     def cors_origins_list(self) -> list[str]:
-        """Convert comma-separated string into a list for FastAPI CORS."""
+        """CORS origins as a list — env var stores them comma-separated."""
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
-@lru_cache
-def get_settings() -> Settings:
-    """Cached singleton — call this everywhere you need config."""
-    return Settings()  # type: ignore[call-arg]
-
-
-settings = get_settings()
+# Module-level singleton — all services import this
+settings = Settings()

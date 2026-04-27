@@ -9,6 +9,14 @@ For each query:
 The output of this stage feeds into the reranker, which produces the
 final top-N. RRF is unaffected by score-scale differences between
 dense (cosine, 0-1) and sparse (BM25, unbounded) — it only uses ranks.
+
+Phase 8: honors `settings.retrieval_mode` for ablation:
+    "hybrid"      → dense + sparse + RRF (default, production behavior)
+    "dense_only"  → dense search only, ranked by cosine
+    "sparse_only" → sparse search only, ranked by BM25
+
+In dense_only / sparse_only modes we synthesize an RRF-shaped score so
+downstream code (reranker, citations) works without special-casing.
 """
 
 import logging
@@ -62,11 +70,58 @@ class HybridRetriever:
         top_k_sparse: int | None = None,
         top_k_fused: int | None = None,
     ) -> list[RetrievalResult]:
-        """Run both searches, fuse, return top_k_fused results."""
+        """Run both searches, fuse, return top_k_fused results.
+
+        Behavior depends on settings.retrieval_mode:
+          "hybrid"      — both searches + RRF (default)
+          "dense_only"  — only dense
+          "sparse_only" — only sparse
+        """
         top_k_dense = top_k_dense or settings.retrieval_top_k_dense
         top_k_sparse = top_k_sparse or settings.retrieval_top_k_sparse
         top_k_fused = top_k_fused or settings.retrieval_top_k_dense
 
+        mode = settings.retrieval_mode
+
+        # ---- Dense-only ablation ----
+        if mode == "dense_only":
+            dense_vec = self.embedder.embed_query_dense(query)
+            dense_results = await self._search_dense(
+                dense_vec.tolist(), top_k_dense, filters
+            )
+            log.info(
+                "Hybrid: dense_only mode (n=%d)", len(dense_results)
+            )
+            return [
+                RetrievalResult(
+                    point=hit,
+                    rrf_score=1.0 / (self.rrf_k + rank),
+                    dense_rank=rank,
+                    sparse_rank=None,
+                )
+                for rank, hit in enumerate(dense_results[:top_k_fused])
+            ]
+
+        # ---- Sparse-only ablation ----
+        if mode == "sparse_only":
+            sparse_vec = self.embedder.embed_query_sparse(query)
+            sparse_results = await self._search_sparse(
+                sparse_vec, top_k_sparse, filters
+            )
+            log.info(
+                "Hybrid: sparse_only mode (n=%d)", len(sparse_results)
+            )
+            return [
+                RetrievalResult(
+                    point=hit,
+                    rrf_score=1.0 / (self.rrf_k + rank),
+                    dense_rank=None,
+                    sparse_rank=rank,
+                )
+                for rank, hit in enumerate(sparse_results[:top_k_fused])
+            ]
+
+        # ---- Hybrid (default) ----
         # Embed the query both ways
         dense_vec = self.embedder.embed_query_dense(query)
         sparse_vec = self.embedder.embed_query_sparse(query)
@@ -79,8 +134,9 @@ class HybridRetriever:
             sparse_vec, top_k_sparse, filters
         )
 
-        log.debug(
-            "Hybrid: dense=%d sparse=%d", len(dense_results), len(sparse_results)
+        log.info(
+            "Hybrid: dense=%d sparse=%d",
+            len(dense_results), len(sparse_results),
         )
 
         # Fuse and return top_k
@@ -131,7 +187,9 @@ class HybridRetriever:
         score(doc) = 1/(k + rank_dense) + 1/(k + rank_sparse)
         Documents in both lists get the sum; documents in one get partial credit.
         """
-        scores: dict = defaultdict(lambda: {"score": 0.0, "dense_rank": None, "sparse_rank": None})
+        scores: dict = defaultdict(
+            lambda: {"score": 0.0, "dense_rank": None, "sparse_rank": None}
+        )
         points: dict = {}
 
         for rank, hit in enumerate(dense):
