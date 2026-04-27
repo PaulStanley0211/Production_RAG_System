@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Editorial-clean light: warm off-white background, deep charcoal text, restrained cool teal accent */
+    --background: 40 24% 98%;
+    --foreground: 220 14% 14%;
+
+    --card: 40 24% 98%;
+    --card-foreground: 220 14% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 14% 14%;
+
+    /* Muted teal accent for primary actions and citations */
+    --primary: 188 50% 32%;
+    --primary-foreground: 40 24% 98%;
+
+    --secondary: 30 12% 94%;
+    --secondary-foreground: 220 14% 14%;
+
+    --muted: 30 12% 94%;
+    --muted-foreground: 220 8% 42%;
+
+    --accent: 188 36% 92%;
+    --accent-foreground: 188 60% 22%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 40 24% 98%;
+
+    --border: 30 14% 88%;
+    --input: 30 14% 88%;
+    --ring: 188 50% 32%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark: deep charcoal w/ warm undertone, soft cream text */
+    --background: 220 16% 8%;
+    --foreground: 40 24% 94%;
+
+    --card: 220 16% 10%;
+    --card-foreground: 40 24% 94%;
+
+    --popover: 220 16% 10%;
+    --popover-foreground: 40 24% 94%;
+
+    --primary: 188 50% 60%;
+    --primary-foreground: 220 16% 8%;
+
+    --secondary: 220 12% 16%;
+    --secondary-foreground: 40 24% 94%;
+
+    --muted: 220 12% 16%;
+    --muted-foreground: 40 8% 62%;
+
+    --accent: 188 30% 22%;
+    --accent-foreground: 188 50% 80%;
+
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 40 24% 94%;
+
+    --border: 220 12% 20%;
+    --input: 220 12% 20%;
+    --ring: 188 50% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "ss01", "cv02", "cv11";
+  }
+  h1, h2, h3 {
+    font-family: theme('fontFamily.serif');
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Subtle fade for streamed tokens */
+.token-fade > * {
+  animation: token-fade 220ms ease-out both;
+}
+@keyframes token-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Markdown styling — editorial, not flashy */
+.prose-editorial {
+  color: hsl(var(--foreground));
+  line-height: 1.7;
+  font-size: 1rem;
+}
+.prose-editorial p { margin: 0 0 1em; }
+.prose-editorial p:last-child { margin-bottom: 0; }
+.prose-editorial h1, .prose-editorial h2, .prose-editorial h3 {
+  font-family: theme('fontFamily.serif');
+  font-weight: 600;
+  margin: 1.4em 0 0.6em;
+  line-height: 1.25;
+}
+.prose-editorial h1 { font-size: 1.5rem; }
+.prose-editorial h2 { font-size: 1.25rem; }
+.prose-editorial h3 { font-size: 1.1rem; }
+.prose-editorial ul, .prose-editorial ol {
+  padding-left: 1.4em;
+  margin: 0 0 1em;
+}
+.prose-editorial ul { list-style: disc; }
+.prose-editorial ol { list-style: decimal; }
+.prose-editorial li { margin-bottom: 0.3em; }
+.prose-editorial a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.prose-editorial code:not(pre code) {
+  font-family: theme('fontFamily.mono');
+  font-size: 0.88em;
+  background: hsl(var(--muted));
+  padding: 0.12em 0.4em;
+  border-radius: 4px;
+}
+.prose-editorial pre {
+  margin: 1em 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+}
+.prose-editorial blockquote {
+  border-left: 3px solid hsl(var(--primary));
+  padding-left: 1em;
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+  margin: 1em 0;
+}
+.prose-editorial table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.95em;
+}
+.prose-editorial th, .prose-editorial td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.5em 0.7em;
+  text-align: left;
+}
+.prose-editorial th {
+  background: hsl(var(--muted));
+  font-weight: 600;
+}
+
+/* Thin scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
