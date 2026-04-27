@@ -13,6 +13,9 @@ Phase 4 added cache + memory + routing + grading.
 Phase 5 added the CRAG self-correction loop.
 Phase 6 added the three security guards (input / content / output).
 Phase 7 added the streaming variant.
+Phase 8 (this commit): citation snippets bumped from 300 → 1500 chars
+                       so eval-time judges have full context. Frontend should
+                       truncate at display time if a shorter preview is wanted.
 """
 
 import logging
@@ -39,6 +42,12 @@ from app.services.semantic_cache import SemanticCache
 log = logging.getLogger(__name__)
 
 RE_CITATION_MARKER = re.compile(r"\[#(\d+)\]")
+
+# Maximum characters of chunk content stored on each Citation.
+# Large enough that an LLM judge can verify faithfulness against the snippet
+# alone, without needing the original chunk. Frontend should truncate further
+# at display time if a shorter preview is desired.
+CITATION_SNIPPET_CHARS = 1500
 
 
 @dataclass
@@ -357,7 +366,7 @@ class RAGPipeline:
                 source=c.point.payload.get("source", "unknown"),
                 chunk_id=str(c.point.id),
                 score=c.rerank_score,
-                snippet=(c.point.payload.get("content") or "")[:300],
+                snippet=(c.point.payload.get("content") or "")[:CITATION_SNIPPET_CHARS],
             )
             for c in relevant
         ]
@@ -392,7 +401,9 @@ class RAGPipeline:
                 source=relevant[i - 1].point.payload.get("source", "unknown"),
                 chunk_id=str(relevant[i - 1].point.id),
                 score=relevant[i - 1].rerank_score,
-                snippet=(relevant[i - 1].point.payload.get("content") or "")[:300],
+                snippet=(relevant[i - 1].point.payload.get("content") or "")[
+                    :CITATION_SNIPPET_CHARS
+                ],
             )
             for i in cited_indices
         ]

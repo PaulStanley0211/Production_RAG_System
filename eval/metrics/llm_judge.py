@@ -37,7 +37,7 @@ FAITHFULNESS_PROMPT = """You are evaluating whether an AI assistant's answer is 
 - UNFAITHFUL: the answer contains at least one factual claim that the context does not support — a hallucination.
 
 # Scoring
-Output a score in {0.0, 0.5, 1.0}:
+Output a score in {{0.0, 0.5, 1.0}}:
 - 1.0 = fully faithful
 - 0.5 = mostly faithful, with one minor unsupported detail (e.g. a date or name)
 - 0.0 = unfaithful — at least one major hallucinated claim
@@ -68,7 +68,7 @@ ANSWER_RELEVANCE_PROMPT = """You are evaluating whether an AI assistant's answer
 - IRRELEVANT: the answer talks about a different topic, evades the question, or is gibberish.
 
 # Scoring
-Output a score in {0.0, 0.5, 1.0}:
+Output a score in {{0.0, 0.5, 1.0}}:
 - 1.0 = directly addresses the question
 - 0.5 = partially relevant — touches the topic but misses the specific ask
 - 0.0 = off-topic or evasive
