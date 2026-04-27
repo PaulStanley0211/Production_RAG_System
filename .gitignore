@@ -36,3 +36,10 @@ node_modules/
 dist/
 build/
 .next/
+
+# Eval reports (generated artifacts)
+eval/reports/
+
+# Local debug dumps (chunk inspection, etc.)
+chunks_full.txt
+.chunks_dump.json
