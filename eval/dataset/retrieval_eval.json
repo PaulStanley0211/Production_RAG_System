@@ -1,0 +1,219 @@
+{
+  "description": "Retrieval evaluation set. Each entry: a question, the chunk IDs that should be retrieved, and metadata. Used by eval/runners/retrieval_runner.py to compute Hit Rate@K and MRR.",
+  "version": "1.0",
+  "test_cases": [
+    {
+      "id": "factual-001",
+      "category": "direct_factual",
+      "query": "What is Project Glasswing?",
+      "relevant_chunk_ids": ["fe4a0fca-13b4-5281-a835-630ba712864c"],
+      "notes": "Only the Anthropic.html chunk mentions Glasswing"
+    },
+    {
+      "id": "factual-002",
+      "category": "direct_factual",
+      "query": "What is Claude Opus 4.7?",
+      "relevant_chunk_ids": ["fe4a0fca-13b4-5281-a835-630ba712864c"],
+      "notes": "Anthropic.html mentions the Opus 4.7 release"
+    },
+    {
+      "id": "factual-003",
+      "category": "direct_factual",
+      "query": "What is Azure OpenAI Service?",
+      "relevant_chunk_ids": ["894af7ad-accc-520c-915e-e9f5ea48b768"],
+      "notes": "Chapter 1 of the Azure guide"
+    },
+    {
+      "id": "factual-004",
+      "category": "direct_factual",
+      "query": "What is the difference between Azure Functions and Azure App Service?",
+      "relevant_chunk_ids": ["4618315b-8fb9-547e-a50c-58fb47972190"],
+      "notes": "Chunk 7 has the comparison table"
+    },
+    {
+      "id": "factual-005",
+      "category": "direct_factual",
+      "query": "What is Azure Blob Storage used for in the RAG pipeline?",
+      "relevant_chunk_ids": ["84e72641-3420-5c23-96f3-0ae9eaf8f0d3", "70c9676e-060f-52a8-9a97-3e5a02c14304"],
+      "notes": "Chunks 8 and 9 cover Blob Storage usage"
+    },
+    {
+      "id": "factual-006",
+      "category": "direct_factual",
+      "query": "What does Azure Bot Service do?",
+      "relevant_chunk_ids": ["a44bea32-11b1-52c7-a580-9a9d0f256ae5", "ef32e180-f4a7-53ee-86c1-aa7be83dec66"],
+      "notes": "Chapter 2 starts in chunk 3 and continues into chunk 4"
+    },
+    {
+      "id": "factual-007",
+      "category": "direct_factual",
+      "query": "What are Azure Cognitive Services?",
+      "relevant_chunk_ids": ["0ad247a5-6a1d-549c-85b8-6c6d56a8354d"],
+      "notes": "Chapter 3"
+    },
+    {
+      "id": "factual-008",
+      "category": "direct_factual",
+      "query": "What are the trigger types for Azure Functions?",
+      "relevant_chunk_ids": ["18dd9c4a-1740-5f14-8c8c-448bf02fbd57"],
+      "notes": "HTTP, Timer, Blob, Queue triggers — Chapter 4"
+    },
+    {
+      "id": "factual-009",
+      "category": "direct_factual",
+      "query": "What naming convention is used for Python classes in this project?",
+      "relevant_chunk_ids": ["87331183-79da-5adc-a539-f773004642c9"],
+      "notes": "CLAUDE.md naming table"
+    },
+    {
+      "id": "factual-010",
+      "category": "direct_factual",
+      "query": "What is the minimum test coverage required?",
+      "relevant_chunk_ids": ["87331183-79da-5adc-a539-f773004642c9"],
+      "notes": "80% overall, 90% on services"
+    },
+    {
+      "id": "factual-011",
+      "category": "direct_factual",
+      "query": "What is the branching strategy for git?",
+      "relevant_chunk_ids": ["87331183-79da-5adc-a539-f773004642c9"],
+      "notes": "main, dev, feature, fix branches in CLAUDE.md"
+    },
+    {
+      "id": "factual-012",
+      "category": "direct_factual",
+      "query": "What temperature setting is recommended for chatbots?",
+      "relevant_chunk_ids": ["894af7ad-accc-520c-915e-e9f5ea48b768"],
+      "notes": "0.1 for chatbots — Azure Chapter 1"
+    },
+
+    {
+      "id": "paraphrased-001",
+      "category": "paraphrased",
+      "query": "Why use Microsoft's enterprise AI offering instead of the public OpenAI API?",
+      "relevant_chunk_ids": ["894af7ad-accc-520c-915e-e9f5ea48b768"],
+      "notes": "Tests semantic match — uses different terms than the doc"
+    },
+    {
+      "id": "paraphrased-002",
+      "category": "paraphrased",
+      "query": "How do I run code in the cloud without managing servers?",
+      "relevant_chunk_ids": ["18dd9c4a-1740-5f14-8c8c-448bf02fbd57"],
+      "notes": "Serverless = Azure Functions"
+    },
+    {
+      "id": "paraphrased-003",
+      "category": "paraphrased",
+      "query": "Where should application secrets and API keys be stored?",
+      "relevant_chunk_ids": ["025f1b6c-f220-5f48-9152-ff8496197fab"],
+      "notes": "CLAUDE.md security rules"
+    },
+    {
+      "id": "paraphrased-004",
+      "category": "paraphrased",
+      "query": "What's the rule about using print statements in the code?",
+      "relevant_chunk_ids": ["461788ce-e438-5f71-b908-1f8278503f2c"],
+      "notes": "Do Not list — use the logger"
+    },
+    {
+      "id": "paraphrased-005",
+      "category": "paraphrased",
+      "query": "What service handles routing chatbot messages to Teams or Slack?",
+      "relevant_chunk_ids": ["ef32e180-f4a7-53ee-86c1-aa7be83dec66", "a44bea32-11b1-52c7-a580-9a9d0f256ae5"],
+      "notes": "Azure Bot Service"
+    },
+    {
+      "id": "paraphrased-006",
+      "category": "paraphrased",
+      "query": "Where can I find Anthropic's news about their newest model release?",
+      "relevant_chunk_ids": ["fe4a0fca-13b4-5281-a835-630ba712864c"],
+      "notes": "Anthropic.html mentions Opus 4.7 release"
+    },
+    {
+      "id": "paraphrased-007",
+      "category": "paraphrased",
+      "query": "What library is used for static type checking?",
+      "relevant_chunk_ids": ["9279435e-9837-5438-ba9d-e513f00f449b"],
+      "notes": "mypy in CLAUDE.md tooling table"
+    },
+    {
+      "id": "paraphrased-008",
+      "category": "paraphrased",
+      "query": "How are PDFs uploaded and processed automatically?",
+      "relevant_chunk_ids": ["84e72641-3420-5c23-96f3-0ae9eaf8f0d3", "70c9676e-060f-52a8-9a97-3e5a02c14304"],
+      "notes": "Blob Storage + Blob trigger Function"
+    },
+
+    {
+      "id": "multichunk-001",
+      "category": "multi_chunk",
+      "query": "Walk me through the complete ZEISS chatbot architecture",
+      "relevant_chunk_ids": ["70c9676e-060f-52a8-9a97-3e5a02c14304"],
+      "notes": "Chapter 7 explicitly covers the full architecture"
+    },
+    {
+      "id": "multichunk-002",
+      "category": "multi_chunk",
+      "query": "What is the project's overall testing approach?",
+      "relevant_chunk_ids": ["a9a36814-c0c9-54b5-a499-632af55f35e0", "87331183-79da-5adc-a539-f773004642c9"],
+      "notes": "Testing strategy spans chunks 3 and 4"
+    },
+    {
+      "id": "multichunk-003",
+      "category": "multi_chunk",
+      "query": "What are all the rules for handling LLM responses?",
+      "relevant_chunk_ids": ["025f1b6c-f220-5f48-9152-ff8496197fab", "461788ce-e438-5f71-b908-1f8278503f2c"],
+      "notes": "AI/LLM guidelines straddle two chunks"
+    },
+    {
+      "id": "multichunk-004",
+      "category": "multi_chunk",
+      "query": "What are the key concepts I need to know about Azure OpenAI?",
+      "relevant_chunk_ids": ["894af7ad-accc-520c-915e-e9f5ea48b768", "b7e22545-385e-5b30-bd90-7bfabc5f1533", "a44bea32-11b1-52c7-a580-9a9d0f256ae5"],
+      "notes": "Endpoint, API key, tokens, system prompt span chunks 1-3"
+    },
+    {
+      "id": "multichunk-005",
+      "category": "multi_chunk",
+      "query": "How is the project's code organized?",
+      "relevant_chunk_ids": ["dc10cdec-e38c-5e84-8dc0-66a66c2c7982", "7c63bdc2-07d6-563a-951f-ca9926c8f0c9"],
+      "notes": "Repository structure section"
+    },
+
+    {
+      "id": "out_of_corpus-001",
+      "category": "out_of_corpus",
+      "query": "What is the recipe for sourdough bread?",
+      "relevant_chunk_ids": [],
+      "notes": "Cooking — nothing in corpus"
+    },
+    {
+      "id": "out_of_corpus-002",
+      "category": "out_of_corpus",
+      "query": "Who won the 2026 World Cup?",
+      "relevant_chunk_ids": [],
+      "notes": "Sports — nothing in corpus"
+    },
+    {
+      "id": "out_of_corpus-003",
+      "category": "out_of_corpus",
+      "query": "What is the population of Tokyo?",
+      "relevant_chunk_ids": [],
+      "notes": "Geography — nothing in corpus"
+    },
+    {
+      "id": "out_of_corpus-004",
+      "category": "out_of_corpus",
+      "query": "How do I treat a sprained ankle?",
+      "relevant_chunk_ids": [],
+      "notes": "Medical — nothing in corpus"
+    },
+    {
+      "id": "out_of_corpus-005",
+      "category": "out_of_corpus",
+      "query": "What are the symptoms of feline diabetes?",
+      "relevant_chunk_ids": [],
+      "notes": "Veterinary — nothing in corpus"
+    }
+  ]
+}

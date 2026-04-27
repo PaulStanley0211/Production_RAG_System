@@ -1,0 +1,178 @@
+{
+  "description": "End-to-end answer evaluation set. Each entry: a query, a reference answer capturing the correct facts, expected behavior, and key facts the answer must contain. Used by eval/runners/e2e_runner.py with eval/metrics/llm_judge.py.",
+  "version": "1.0",
+  "test_cases": [
+    {
+      "id": "gen-001",
+      "query": "What is Project Glasswing?",
+      "expected_behavior": "partial",
+      "reference_answer": "Project Glasswing is described as 'Securing critical software for the AI era.' The available context provides only this brief tagline and does not include further implementation details.",
+      "key_facts": [
+        "Project Glasswing is mentioned on the Anthropic homepage",
+        "Its tagline is about securing critical software for the AI era",
+        "The answer must acknowledge that limited details are available"
+      ],
+      "notes": "Tests honest partial-answer behavior — the chunk has the tagline but no details"
+    },
+    {
+      "id": "gen-002",
+      "query": "What is Azure OpenAI Service and why use it instead of the public OpenAI API?",
+      "expected_behavior": "answer",
+      "reference_answer": "Azure OpenAI Service provides GPT models inside Microsoft's Azure cloud. Compared to the public OpenAI API, it keeps data within your chosen Azure region (critical for GDPR), provides a 99.9% enterprise SLA, and is required for companies with strict data residency or compliance needs.",
+      "key_facts": [
+        "Provides GPT models inside Azure",
+        "Data stays in your chosen region",
+        "GDPR compliance",
+        "Enterprise SLA / 99.9% uptime"
+      ],
+      "notes": "Should retrieve and ground from Azure chunk 1"
+    },
+    {
+      "id": "gen-003",
+      "query": "What is the difference between Azure Functions and Azure App Service?",
+      "expected_behavior": "answer",
+      "reference_answer": "Azure Functions is serverless: it runs only when triggered, charges per execution, and is best for short tasks like a chatbot's RAG endpoint. Azure App Service runs continuously, has a fixed monthly cost, maintains state across calls, and is best for full web applications like a Streamlit or FastAPI app.",
+      "key_facts": [
+        "Functions runs only when triggered (serverless)",
+        "App Service runs 24/7",
+        "Functions pay per execution",
+        "App Service has fixed monthly cost",
+        "Functions for short tasks; App Service for full web apps"
+      ]
+    },
+    {
+      "id": "gen-004",
+      "query": "What temperature setting is recommended for chatbots?",
+      "expected_behavior": "answer",
+      "reference_answer": "0.1 is recommended for chatbots — low temperature produces precise, factual responses with limited variation.",
+      "key_facts": [
+        "0.1 is the recommended value",
+        "Low temperature means precise/factual"
+      ]
+    },
+    {
+      "id": "gen-005",
+      "query": "What is the minimum test coverage required for the project?",
+      "expected_behavior": "answer",
+      "reference_answer": "The project requires 80% overall test coverage and 90% on the services/ directory. The threshold is enforced in CI — PRs below it are blocked.",
+      "key_facts": [
+        "80% overall",
+        "90% on services/",
+        "Enforced in CI"
+      ]
+    },
+    {
+      "id": "gen-006",
+      "query": "What naming conventions are used for Python classes and functions?",
+      "expected_behavior": "answer",
+      "reference_answer": "Classes use PascalCase (e.g. RAGPipeline). Functions and variables use snake_case (e.g. retrieve_relevant_docs). Constants use SCREAMING_SNAKE. Private methods have a leading underscore.",
+      "key_facts": [
+        "Classes use PascalCase",
+        "Functions use snake_case",
+        "Constants use SCREAMING_SNAKE"
+      ]
+    },
+    {
+      "id": "gen-007",
+      "query": "What are the trigger types available for Azure Functions?",
+      "expected_behavior": "answer",
+      "reference_answer": "Azure Functions supports four main trigger types: HTTP triggers (someone calls a URL), Timer triggers (scheduled time), Blob triggers (a new file is uploaded to Storage), and Queue triggers (a new message in a queue).",
+      "key_facts": [
+        "HTTP trigger",
+        "Timer trigger",
+        "Blob trigger",
+        "Queue trigger"
+      ]
+    },
+    {
+      "id": "gen-008",
+      "query": "How does the chatbot architecture connect Azure services together?",
+      "expected_behavior": "answer",
+      "reference_answer": "The architecture connects six Azure services: Blob Storage holds uploaded PDFs, Azure Functions processes them on upload, Azure OpenAI creates embeddings and generates answers, Azure AI Search retrieves relevant chunks, Cognitive Services understands user intent, Bot Service delivers responses to platforms like Teams, and App Service hosts the web interface.",
+      "key_facts": [
+        "Six Azure services involved",
+        "Blob Storage for PDFs",
+        "Azure Functions for processing",
+        "Azure OpenAI for generation",
+        "Bot Service for delivery",
+        "App Service for hosting"
+      ]
+    },
+    {
+      "id": "gen-009",
+      "query": "What does the project's Do Not list say about print statements?",
+      "expected_behavior": "answer",
+      "reference_answer": "Do not add print() statements to non-script code — use the logger instead.",
+      "key_facts": [
+        "Do not use print() in non-script code",
+        "Use the logger"
+      ]
+    },
+    {
+      "id": "gen-010",
+      "query": "What is the rule about importing across architectural layers?",
+      "expected_behavior": "answer",
+      "reference_answer": "Services must never import from src.api/. The architecture enforces strict layering: API → Service → Repository, with no upward dependencies. Do not import src.api from src.services.",
+      "key_facts": [
+        "Services do not import from api/",
+        "Strict layering is enforced",
+        "API imports services, not the other way"
+      ]
+    },
+    {
+      "id": "gen-011",
+      "query": "How does the project store API keys and secrets?",
+      "expected_behavior": "answer",
+      "reference_answer": "Secrets are managed via environment variables loaded through src/core/config.py. API keys and secrets are never committed — .env is in .gitignore. In production, secrets flow through a secrets manager like AWS Secrets Manager or Vault. Pre-commit includes detect-secrets to block accidental commits.",
+      "key_facts": [
+        "Environment variables via src/core/config.py",
+        ".env is gitignored",
+        "Production uses a secrets manager",
+        "detect-secrets in pre-commit"
+      ]
+    },
+    {
+      "id": "gen-012",
+      "query": "What were Anthropic's recent product announcements?",
+      "expected_behavior": "answer",
+      "reference_answer": "Anthropic recently announced Claude Opus 4.7 (April 2026), described as a more capable Opus for coding, agents, vision, and complex professional work. Earlier announcements include 'Claude is a space to think' (February 2026) and Claude on Mars, where Claude assisted NASA's Perseverance rover (January 2026).",
+      "key_facts": [
+        "Claude Opus 4.7 announced April 2026",
+        "Claude is a space to think announced February 2026",
+        "Claude on Mars (NASA Perseverance) January 2026"
+      ]
+    },
+    {
+      "id": "gen-013",
+      "query": "What is the recipe for sourdough bread?",
+      "expected_behavior": "answer",
+      "reference_answer": "This is generic knowledge that the LLM can answer from training. The system should classify it as no_retrieval and produce a brief recipe-style response without claiming citations from the corpus.",
+      "key_facts": [],
+      "notes": "Tests router's no_retrieval path. Empty key_facts = judge only checks the answer didn't claim corpus citations."
+    },
+    {
+      "id": "gen-014",
+      "query": "What is our company's PTO policy for new hires?",
+      "expected_behavior": "refuse",
+      "reference_answer": "The system should refuse politely. The corpus contains no HR policy documents, so the answer must acknowledge that this information is not available in the documents and avoid inventing a policy.",
+      "key_facts": [
+        "Acknowledges info is not in the documents",
+        "Does not fabricate a PTO policy"
+      ],
+      "notes": "Tests CRAG REFUSE path"
+    },
+    {
+      "id": "gen-015",
+      "query": "Compare Azure Functions and Azure App Service on cost, scalability, and use case",
+      "expected_behavior": "answer",
+      "reference_answer": "Azure Functions: pay per execution (cheap at low usage), scales automatically in milliseconds, best for short triggered tasks like a RAG chatbot endpoint. Azure App Service: fixed monthly cost regardless of usage, scales by running multiple instances, best for full web applications like a Streamlit or FastAPI app that runs 24/7.",
+      "key_facts": [
+        "Functions: pay per execution",
+        "App Service: fixed monthly cost",
+        "Functions auto-scales in ms",
+        "Functions for short tasks, App Service for full web apps"
+      ],
+      "notes": "Tests COMPARATIVE intent path with decomposition"
+    }
+  ]
+}
