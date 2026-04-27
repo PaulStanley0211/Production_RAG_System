@@ -36,6 +36,7 @@ async def search(
         "results": [
             {
                 "rank": i + 1,
+                "chunk_id": str(r.point.id),
                 "rerank_score": round(r.rerank_score, 4),
                 "rrf_score": round(r.rrf_score, 4),
                 "dense_rank": r.dense_rank,
